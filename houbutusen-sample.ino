@@ -43,13 +43,13 @@ bool isJumpStart = false;
 uint16_t jumpWidth = 0;
 int ballRight = 1;
 uint16_t crdX = 0;
-int crdY = 0;
-int maxY = 0;
+uint16_t crdY = 0;
+uint16_t maxY = 0;
 
 void setup()
 {
     arduboy.begin();
-    arduboy.setFrameRate(60);
+    arduboy.setFrameRate(10);
     arduboy.clear();
 }
 
@@ -63,61 +63,87 @@ void loop()
 
     if (arduboy.pressed(B_BUTTON) && !isJumping)
     {
-        bPressedTime++;
+        // 押した時間を保持する
+        bPressedTime = 10;
         isJumpStart = true;
     }
     else if (arduboy.notPressed(B_BUTTON) && isJumpStart)
     {
         // 偶数にしておく
-        if (bPressedTime % 2 != 0)
-        {
-            bPressedTime++;
-        }
-        crdX -= ((bPressedTime / 2) << 8);
-        maxY = ((crdX >> 8) * (crdX >> 8)) / 2;
-        jumpWidth = (bPressedTime << 8);
+        // if (bPressedTime % 2 != 0)
+        // {
+        //     bPressedTime++;
+        // }
+        crdX = -(4 << 8);
+        // maxY = ((crdX >> 8) * (crdX >> 8)) / 2;
+        maxY = (8 << 8);
+        // jumpWidth = (bPressedTime << 5);
         isJumpStart = false;
         isJumping = true;
     }
 
     // 移動中
-    if ((jumpWidth != 0) && isJumping)
+    if (isJumping)
     {
         // 横方向の移動
         // 1ずつ移動する
         if (ballRight == 1)
         {
-            pos.X += (1 << 6); // 1移動
+            pos.X += (1 << 5); // 0.25移動
         }
         else
         {
-            pos.X -= (1 << 6); // -1移動
+            pos.X -= (1 << 5); // -0.25移動
         }
+        crdX += (1 << 5); // 0.25移動
 
         // 縦方向の移動
         if (crdX < 0)
         {
+            arduboy.print("upupupup");
+            arduboy.print("\n");
             // 上
-            crdY = maxY - (((crdX >> 8) * (crdX >> 8)) / 2);
-            pos.Y -= (crdY << 6);
+            crdY = (((maxY >> 8) - (((crdX >> 8) * (crdX >> 8)) / 2)) << 8);
+            pos.Y = -crdY;
         }
         else if (crdX > 0)
         {
+            arduboy.setCursor(0, 32);
+            arduboy.print(maxY >> 8);
+            arduboy.print(" - ");
+            arduboy.print(crdX >> 8);
+            arduboy.print(" * ");
+            arduboy.print(crdX >> 8);
+            arduboy.print(" / 2");
+            arduboy.print("\n");
+            arduboy.setCursor(0, 0);
             // 下
-            crdY = maxY - (((crdX >> 8) * (crdX >> 8)) / 2);
-            pos.Y += (crdY << 6);
+            crdY = (((maxY >> 8) - (((crdX >> 8) * (crdX >> 8)) / 2)) << 8);
+            if (crdY == 0)
+            {
+                pos.Y = 0;
+                arduboy.print("!!!!Y!!!!=");
+                arduboy.print(pos.Y);
+                arduboy.print("\n");
+            }
+            else
+            {
+                pos.Y = -crdY;
+            }
         }
         else
         {
-            pos.Y += (maxY << 6);
+            pos.Y = -maxY;
         }
 
-        jumpWidth -= (1 << 6);
-        crdX += (1 << 6);
+        // jumpWidth -= (1 << 5);
+        // crdX += (1 << 5);
     }
     // 移動終了
-    else if (jumpWidth == 0 && isJumping)
+    if (crdX == (4 << 8) && isJumping)
     {
+        arduboy.print("move end");
+        arduboy.print("\n");
         isJumping = false;
         crdX = 0;
         bPressedTime = 0;
@@ -153,7 +179,7 @@ void loop()
     arduboy.print(pos.XH);
     arduboy.print("\n");
     arduboy.print("Y=");
-    arduboy.print(pos.YH);
+    arduboy.print(pos.Y);
     arduboy.print("\n");
 
     arduboy.display();
